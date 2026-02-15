@@ -84,7 +84,7 @@
                         <button class="tag-filter-btn" id="tagFilterBtn" onclick="showTagFilterPopup()" title="タグで絞り込む">タグ絞込</button>
                     </div>
                     <div class="search-input-wrapper">
-                        <input type="text" id="searchQuery" placeholder="曲名、アーティスト、よみがなを入力">
+                        <input type="text" id="searchQuery" placeholder="曲名、アーティスト、よみがなを入力" autocomplete="off">
                         <button class="clear-btn" id="searchClear">×</button>
                         <span class="result-count-inline" id="resultCountInline"></span>
                     </div>
@@ -116,7 +116,7 @@
         <div id="list-tab" class="tab-content hidden">
             <div class="list-filter">
                 <input type="text" id="listFilter" placeholder="一覧内を検索 ..."
-                    style="padding: 10px; width: 100%; border: 2px solid #e2e8f0; border-radius: 8px;">
+                    style="padding: 10px; width: 100%; border: 2px solid #e2e8f0; border-radius: 8px;" autocomplete="off">
                 <button class="clear-btn" id="filterClear">×</button>
             </div>
             <div class="list-controls"
@@ -262,7 +262,7 @@
             </div>
         </div>
     </div>
-    <div id="detailReportPopup" class="popup-overlay hidden" onclick="closeDetailReportPopup(event)">
+    <div id="detailReportPopup" class="popup-overlay hidden">
         <div class="popup-modal" onclick="event.stopPropagation()">
             <div class="popup-header">
                 <h2>詳細情報の誤り報告</h2>
@@ -415,6 +415,22 @@
             <div class="popup-footer">
                 <button class="popup-cancel-btn" onclick="closeDetailReportPopup()">キャンセル</button>
                 <button class="popup-submit-btn" onclick="submitDetailReport()">報告する</button>
+            </div>
+        </div>
+    </div>
+    <!-- 感謝メッセージポップアップ -->
+    <div id="thanksPopup" class="popup-overlay hidden" onclick="closeThankYouPopup(event)">
+        <div class="popup-modal" onclick="event.stopPropagation()">
+            <div class="popup-header">
+                <h2>報告完了</h2>
+            </div>
+            <div class="popup-content" style="text-align: center; padding: 40px 20px;">
+                <div style="font-size: 48px; margin-bottom: 20px;">✓</div>
+                <p style="font-size: 18px; color: #4a5568; margin-bottom: 10px;">ご報告ありがとうございます！</p>
+                <p style="font-size: 14px; color: #718096;">いただきました情報は今後のデータ改善に役立てさせていただきます。</p>
+            </div>
+            <div class="popup-footer">
+                <button class="popup-ok-btn" onclick="closeThankYouPopup()">閉じる</button>
             </div>
         </div>
     </div>

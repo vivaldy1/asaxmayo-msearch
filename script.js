@@ -334,6 +334,23 @@ function closeDetailReportPopup(event) {
     document.getElementById('detailReportForm').reset();
 }
 
+function showThankYouPopup() {
+    const popup = document.getElementById('thanksPopup');
+    popup.classList.remove('hidden');
+    // 自動閉じる機能を追加（オプション：3秒後に自動で閉じる）
+    // setTimeout(() => {
+    //     closeThankYouPopup();
+    //     closeSongDetail();
+    // }, 3000);
+}
+
+function closeThankYouPopup(event) {
+    if (event && event.target.id !== 'thanksPopup') return;
+    const popup = document.getElementById('thanksPopup');
+    popup.classList.add('hidden');
+    closeSongDetail();
+}
+
 function showDetailReportPopup() {
     const popup = document.getElementById('detailReportPopup');
     popup.classList.remove('hidden');
@@ -685,9 +702,10 @@ function submitDetailReport() {
     fetch(url, { method: 'GET' })
         .then(response => response.text())
         .then(data => {
+            // 詳細レポートポップアップを閉じる
             closeDetailReportPopup();
-            closeSongDetail();
-            showReportSuccessPopup();
+            // 感謝メッセージポップアップを表示
+            showThankYouPopup();
             submitBtn.disabled = false;
             submitBtn.textContent = '報告する';
         })
@@ -835,11 +853,12 @@ function createResultItem(song, query) {
 }
 function filterList() {
     const query = document.getElementById('listFilter').value.trim().toLowerCase();
+    const normalizedQuery = query.replace(/ /g, ''); // スペースを除去した検索キーを作成
     filteredListSongs = !query ? [...allSongs] : allSongs.filter(song =>
         (song['曲名'] || '').toLowerCase().includes(query) ||
-        (song['曲名の読み'] || '').toLowerCase().includes(query) ||
+        (song['曲名の読み'] || '').toLowerCase().replace(/ /g, '').includes(normalizedQuery) ||
         (song['アーティスト'] || '').toLowerCase().includes(query) ||
-        (song['アーティストの読み'] || '').toLowerCase().includes(query) ||
+        (song['アーティストの読み'] || '').toLowerCase().replace(/ /g, '').includes(normalizedQuery) ||
         (song['タイアップ'] || '').toLowerCase().includes(query)
     );
     console.log('filterList:', filteredListSongs.length, 'songs after filter');
@@ -953,15 +972,35 @@ function createPageBtn(text, pageNum) {
 function highlightText(text, query) {
     if (!query || !text) return escapeHtml(text);
     
-    // 元のテキストで検索対象とマッチ位置を取得
-    const escapedQuery = escapeRegex(query);
-    const searchRegex = new RegExp(escapedQuery, 'gi');
+    // 正規化（スペース削除）
+    const normalizedText = text.replace(/ /g, '');
+    const normalizedQuery = escapeRegex(query.replace(/ /g, ''));
+    const searchRegex = new RegExp(normalizedQuery, 'gi');
+    
+    // 正規化されたテキスト上でマッチを取得
     const matches = [];
     let match;
-    
-    while ((match = searchRegex.exec(text)) !== null) {
+    while ((match = searchRegex.exec(normalizedText)) !== null) {
         matches.push({ start: match.index, end: match.index + match[0].length });
     }
+    
+    // 正規化前テキストのスペース位置をマップ: normalizedIndex → originalIndex
+    const indexMap = {};
+    let normalizedIdx = 0;
+    for (let i = 0; i < text.length; i++) {
+        if (text[i] !== ' ') {
+            indexMap[normalizedIdx] = i;
+            normalizedIdx++;
+        }
+    }
+    // 最後のインデックスもマップ
+    indexMap[normalizedIdx] = text.length;
+    
+    // マッチ位置を元のテキスト上の位置に変換
+    const originalMatches = matches.map(m => ({
+        start: indexMap[m.start],
+        end: indexMap[m.end]
+    }));
     
     // マッチ位置を記録しながら、文字ごとにエスケープしてハイライトを適用
     let result = '';
@@ -971,7 +1010,7 @@ function highlightText(text, query) {
         const char = text[i];
         
         // このインデックスがマッチ範囲内かを確認
-        const isInMatch = matches.some(m => i >= m.start && i < m.end);
+        const isInMatch = originalMatches.some(m => i >= m.start && i < m.end);
         
         // ハイライト状態の変化
         if (isInMatch && !inHighlight) {
@@ -1066,8 +1105,13 @@ document.addEventListener('DOMContentLoaded', function () {
         searchInput.focus();
         performSearch();
     });
-    searchInput.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); searchInput.blur(); }
+    searchInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { 
+            e.preventDefault();
+            clearTimeout(searchTimeout);  // ペンディング中のタイムアウトをクリア
+            performSearch();  // 即座に検索を実行
+            searchInput.blur();  // フォーカスを外す
+        }
     });
     searchRadios.forEach(radio => radio.addEventListener('change', performSearch));
     const listFilter = document.getElementById('listFilter');
@@ -1080,14 +1124,34 @@ document.addEventListener('DOMContentLoaded', function () {
         clearTimeout(listFilterTimeout);
         listFilterTimeout = setTimeout(filterList, 300);
     });
-    listFilter.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); listFilter.blur(); }
+    listFilter.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { 
+            e.preventDefault();
+            clearTimeout(listFilterTimeout);  // ペンディング中のタイムアウトをクリア
+            filterList();  // 即座に検索を実行
+            listFilter.blur();  // フォーカスを外す
+        }
     });
     filterClear.addEventListener('click', function () {
         listFilter.value = '';
         updateFilterClear();
         listFilter.focus();
         filterList();
+    });
+    
+    // メニュー以外をクリックするとメニューを閉じる
+    document.addEventListener('click', function (e) {
+        const burgerContainer = document.querySelector('.burger-container');
+        const burgerMenu = document.getElementById('burgerMenu');
+        const isMenuHidden = burgerMenu.classList.contains('hidden');
+        
+        // メニューが表示されている場合のみ
+        if (!isMenuHidden) {
+            // クリック対象がバーガーコンテナの内側でないならメニューを閉じる
+            if (!burgerContainer.contains(e.target)) {
+                closeMenu();
+            }
+        }
     });
 });
 window.onload = function () {
@@ -1215,18 +1279,29 @@ var selectedGenres = [];
 var selectedDecades = []; // 年代フィルター用
 var tagColorMap = {}; // Maps tag values to color indices
 
-// Color palette for tags
+/**
+ * 60色のタグ用カラーパレット
+ * 構成: { bg: 背景色, text: 文字色 }
+ */
 const tagColors = [
-    { bg: '#FFE0B2', text: '#E65100' }, // Orange
-    { bg: '#C8E6C9', text: '#1B5E20' }, // Green
-    { bg: '#BBDEFB', text: '#0D47A1' }, // Blue
-    { bg: '#F8BBD0', text: '#880E4F' }, // Pink
-    { bg: '#B3E5FC', text: '#01579B' }, // Light Blue
-    { bg: '#E1BEE7', text: '#4A148C' }, // Purple
-    { bg: '#C5CAE9', text: '#1A237E' }, // Indigo
-    { bg: '#FFE0B2', text: '#BF360C' }, // Deep Orange
-    { bg: '#F0F4C3', text: '#33691E' }, // Light Green
-    { bg: '#FCE4EC', text: '#C2185B' }, // Rose
+    // 1-10
+    { bg: '#FFE0B2', text: '#E65100' }, { bg: '#C8E6C9', text: '#1B5E20' },
+    { bg: '#BBDEFB', text: '#0D47A1' }, { bg: '#F8BBD0', text: '#880E4F' },
+    { bg: '#B3E5FC', text: '#01579B' }, { bg: '#E1BEE7', text: '#4A148C' },
+    { bg: '#C5CAE9', text: '#1A237E' }, { bg: '#FFE0B2', text: '#BF360C' },
+    { bg: '#F0F4C3', text: '#33691E' }, { bg: '#FCE4EC', text: '#C2185B' },
+    // 11-20
+    { bg: '#FFF9C4', text: '#F57F17' }, { bg: '#B2DFDB', text: '#004D40' },
+    { bg: '#FFECB3', text: '#FF6F00' }, { bg: '#D1C4E9', text: '#311B92' },
+    { bg: '#DCEDC8', text: '#33691E' }, { bg: '#B2EBF2', text: '#006064' },
+    { bg: '#FFCCBC', text: '#BF360C' }, { bg: '#D7CCC8', text: '#3E2723' },
+    { bg: '#F5F5F5', text: '#212121' }, { bg: '#CFD8DC', text: '#263238' },
+    // 21-30 (Warm tones)
+    { bg: '#FFF3E0', text: '#E65100' }, { bg: '#FBE9E7', text: '#D84315' },
+    { bg: '#FFFDE7', text: '#827717' }, { bg: '#FFF8E1', text: '#FF8F00' },
+    { bg: '#FEF9E7', text: '#9A7D0A' }, { bg: '#FDF2E9', text: '#A04000' },
+    { bg: '#FBEEE6', text: '#922B21' }, { bg: '#F9EBEA', text: '#7B241C' },
+    { bg: '#FDEDEC', text: '#943126' }, { bg: '#FEF5E7', text: '#7E5109' }
 ];
 
 function getTagColor(tagValue, isGenre = false) {
@@ -1511,25 +1586,25 @@ function createTagsHTML(song) {
     if (song['季節'] && song['季節'].trim()) {
         const tagValue = song['季節'].trim();
         const color = getTagColor(tagValue, false);
-        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
+        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text}; cursor: pointer;" onclick="onTagClick('${escapeQuotes(tagValue)}', 'season')">${tagValue}</span>`;
     }
     
     if (song['ジャンル1'] && song['ジャンル1'].trim()) {
         const tagValue = song['ジャンル1'].trim();
         const color = getTagColor(tagValue, true);
-        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
+        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text}; cursor: pointer;" onclick="onTagClick('${escapeQuotes(tagValue)}', 'genre')">${tagValue}</span>`;
     }
     
     if (song['ジャンル2'] && song['ジャンル2'].trim()) {
         const tagValue = song['ジャンル2'].trim();
         const color = getTagColor(tagValue, true);
-        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
+        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text}; cursor: pointer;" onclick="onTagClick('${escapeQuotes(tagValue)}', 'genre')">${tagValue}</span>`;
     }
     
     if (song['ジャンル3'] && song['ジャンル3'].trim()) {
         const tagValue = song['ジャンル3'].trim();
         const color = getTagColor(tagValue, true);
-        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text};">${tagValue}</span>`;
+        html += `<span class="tag" style="background-color: ${color.bg}; color: ${color.text}; cursor: pointer;" onclick="onTagClick('${escapeQuotes(tagValue)}', 'genre')">${tagValue}</span>`;
     }
     
     html += '</div>';
@@ -1567,12 +1642,48 @@ function createTagsInlineHTML(song) {
     return html;
 }
 
+// タグクリック時の処理
+function onTagClick(tagValue, tagType) {
+    // 検索ボックスをクリア
+    document.getElementById('searchQuery').value = '';
+    document.getElementById('resultCountInline').textContent = '';
+    
+    // 既存のタグフィルターをリセット
+    selectedSeasons = [];
+    selectedGenres = [];
+    selectedDecades = [];
+    
+    // クリックしたタグを選択状態に設定
+    if (tagType === 'season') {
+        selectedSeasons = [tagValue];
+    } else if (tagType === 'genre') {
+        selectedGenres = [tagValue];
+    }
+    
+    // タグフィルターボタンの表示を更新
+    updateTagButtonAppearance();
+    
+    // 検索を実行
+    performSearch();
+    
+    // ページトップにスクロール
+    setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
+}
+
 // Song Detail Modal Functions
 function openSongDetail(songIndex) {
     const song = allSongs[songIndex];
     if (!song) return;
     
     const content = document.getElementById('songDetailContent');
+    
+    
+    detailCopyBtn.onclick = function() {
+        copyToClipboard(song['曲名'] + '／' + song['アーティスト']);
+    };
+    
     
     // ロボットSVG
     const robotSVG = `<svg width="32" height="32" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style="display: inline; vertical-align: text-bottom;">
@@ -1730,10 +1841,6 @@ function updateListDetailButton() {
         
         detailBtn.onclick = function() {
             openSongDetail(songIndex);
-        };
-        
-        detailCopyBtn.onclick = function() {
-            copyToClipboard(songTitle + '／' + songArtist);
         };
         
         btnContainer.classList.add('show');
