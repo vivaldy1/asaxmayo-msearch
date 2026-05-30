@@ -1,5 +1,12 @@
 {
   "createdAt": "2026/2/1 19:22:37",
-  "liveStreams": [],
+  "liveStreams": [
+    {
+      "videoId": "uxeReyM76AY",
+      "title": "【 #CoffeeBreak歌枠リレー 】珈琲とジャズ♩【 朔栖まよ - Sakusu Mayo 】#生搾りまよ #サックス",
+      "url": "https://www.youtube.com/watch?v=uxeReyM76AY",
+      "startedAt": "2026/5/30 18:29:18"
+    }
+  ],
   "updatedAt": "2026/5/29 14:45:22"
 }
