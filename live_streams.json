@@ -1,5 +1,12 @@
 {
   "createdAt": "2026/2/1 19:22:37",
-  "liveStreams": [],
+  "liveStreams": [
+    {
+      "videoId": "JIla-BfvPyM",
+      "title": "【 #オールナイト配信 】夏が来た！朔栖まよのオールナイトジャム'26 ～ 開会式・演奏 ～【 朔栖まよ - Sakusu Mayo 】 #生搾りまよ #サックス #吹奏楽 #jazz",
+      "url": "https://www.youtube.com/watch?v=JIla-BfvPyM",
+      "startedAt": "2026/7/18 23:32:03"
+    }
+  ],
   "updatedAt": "2026/7/18 2:10:02"
 }
