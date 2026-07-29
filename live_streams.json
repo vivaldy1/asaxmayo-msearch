@@ -1,5 +1,12 @@
 {
   "createdAt": "2026/2/1 19:22:37",
-  "liveStreams": [],
+  "liveStreams": [
+    {
+      "videoId": "6qSlg1r-Bv0",
+      "title": "【 #まるまよの 】Summer Session ～ 歌と楽器で奏でる美しいハーモニー ～｜Guest：vo.ヨノ, pf.おまる【 朔栖まよ - Sakusu Mayo 】",
+      "url": "https://www.youtube.com/watch?v=6qSlg1r-Bv0",
+      "startedAt": "2026/7/29 21:01:12"
+    }
+  ],
   "updatedAt": "2026/7/27 2:32:05"
 }
